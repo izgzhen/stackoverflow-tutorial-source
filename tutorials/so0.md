@@ -13,18 +13,35 @@ To conduct hands-on experiments well, we needs to introduce some basic knowledge
 ### The mysterious `ELF` format
 `ELF` (Executable and Linkable Format) is the binary program format in the Linux world. A usual program binary is composed of three parts:
 
-* `text`:
-* `data`:
-* `bss`: 
+* `text`: The program itself
+* `data`: The data area contains global and static variables used by the program that are explicitly initialized with a non-zero (or non-NULL) value.
+* `bss`: BSS segment contains all global variables and static variables that are initialized to zero or do not have explicit initialization in source code.
 
-### Stack -- How is function calling implemented?
+### Stack Frame -- How is function calling implemented?
 Every time we talked about this topic, we need to bring this classical illustration picture to the front:
 
-[here is a graph]
+![](stackframe.png)
 
 What's more, we need to dive into the machine-level instructions as well as the two registers `rbp` and `rsp`.
 
-[here is some illustration]
+When calling a subroutine in x86, we will simply pushed the arguments on the stack and `callq [address of subroutine]`. The `call` will implicitly push the current `%eip`, or the "return address" on the stack. Then, the control is handed over to the subroutine, which will first:
+
+    push %rbp
+    mov  %rsp, %rbp
+
+, simply push the caller's frame base pointer on the stack so we can restore it back after subroutine. Then, we will use `%rsp` to extract the arguments from stack.
+
+After the subroutine is finished, we will
+
+    leave
+    ret
+
+The `leave` instruction is actually the synonym of
+
+    mov %rsp, %rbp
+    pop %rbp
+
+And `ret` will set the `PC` to return address on the stack.
 
 ### Overflow -- Stack Smashing Attack
 The notorious function `gets` will easily incur stack overflow problem. The local variable will be pushed onto stack. So, please imagine an array of `char`, if `gets()` doesn't check the length of input, the other data in the stack will be corrupted.
